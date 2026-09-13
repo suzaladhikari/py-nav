@@ -1,1 +1,17 @@
+# Byte-compiled / optimized / compiled files
+__pycache__
 *.pyc
+*.pyo
+
+# Virtual environment
+venv/
+
+# User runtime files (not part of the repo)
+session_state.json
+
+# User-generated map backups (only maps/ is canonical)
+maps_
+
+# OS junk
+.DS_Store
+Thumbs.db

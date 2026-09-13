@@ -252,17 +252,12 @@ class SimulationView:
     def _results_layout(self):
         row_count = len(self.selected_agents)
         table_height = 41 + 31 * row_count
-        preferred_y = 475
-        run_rect = self.btn_simulate.get_abs_rect()
-        gap = 8
+        gap = 24
 
-        if run_rect.bottom + gap <= preferred_y:
-            table_y = preferred_y
-        elif preferred_y + table_height <= run_rect.top - gap:
-            table_y = preferred_y
-        elif run_rect.bottom + gap + table_height <= SCREEN_H:
-            table_y = run_rect.bottom + gap
-        else:
+        run_rect = self.btn_simulate.get_abs_rect()
+        table_y = run_rect.bottom + gap
+
+        if table_y + table_height > SCREEN_H:
             table_y = max(0, run_rect.top - gap - table_height)
 
         self.results_table_y = table_y

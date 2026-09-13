@@ -2,8 +2,6 @@ from collections import deque
 from typing import List, Tuple, Optional
 from core.agent import Agent
 
-import time, random
-
 
 class BFSAgent(Agent):
     name = 'BFS'

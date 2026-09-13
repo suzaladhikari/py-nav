@@ -1,8 +1,15 @@
-import pygame
-import pygame_gui
-from ui.map_editor import MapEditor
-from ui.sim_view import SimulationView
-from utils.session_state import load_session_state
+try:
+    import pygame
+    import pygame_gui
+    from ui.map_editor import MapEditor
+    from ui.sim_view import SimulationView
+    from utils.session_state import load_session_state
+except ImportError:
+    print("Required libraries are not installed.")
+    print("Run 'python setup.py' from this directory, then 'python run.py'.")
+    import sys
+
+    sys.exit(1)
 
 def main():
     pygame.init()

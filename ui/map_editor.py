@@ -105,6 +105,8 @@ class MapEditor:
     def _build_ui(self):
         sx = 10            # sidebar left padding
         sw = SIDEBAR_W - 20  # usable width
+        self._sx = sx
+        self._sw = sw
 
         y = 10
 
@@ -122,6 +124,9 @@ class MapEditor:
         # ── Map selector dropdown ─────────────────────────────────────────
         self.dropdown_map = None
         self._dropdown_y = y
+        pygame_gui.elements.UILabel(
+            relative_rect=pygame.Rect((sx, y, 42, 30)),
+            text='Map:', manager=self.manager)
         self.refresh_dropdown()
         y += 36
 
@@ -289,7 +294,7 @@ class MapEditor:
             starting_option=(self.get_current_name()
                              if self.get_current_name() in self.map_files
                              else "Select Map..."),
-            relative_rect=pygame.Rect((10, self._dropdown_y), (SIDEBAR_W - 20, 30)),
+            relative_rect=pygame.Rect((self._sx + 45, self._dropdown_y), (self._sw - 45, 30)),
             manager=self.manager
         )
 

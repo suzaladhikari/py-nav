@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m unittest discover -s unit_test -v)",
+      "Bash(python3 -m unittest discover -s unit_test -v)"
+    ]
+  }
+}
