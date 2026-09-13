@@ -1,0 +1,31 @@
+{
+    "button": {
+        "colours": {
+            "normal_text": "#FFFFFF",
+            "hovered_text": "#FFFFFF",
+            "selected_text": "#FFFFFF",
+            "active_text": "#FFFFFF",
+            "normal_bg": "#333333",
+            "hovered_bg": "#444444",
+            "selected_bg": "#106c20"
+        }
+    },
+    "drop_down_menu": {
+        "colours": {
+            "normal_text": "#FFFFFF",
+            "hovered_text": "#FFFFFF",
+            "selected_text": "#FFFFFF"
+        }
+    },
+    "text_entry_line": {
+        "colours": {
+            "normal_text": "#FFFFFF",
+            "selected_text": "#FFFFFF"
+        }
+    },
+    "label": {
+        "colours": {
+            "normal_text": "#FFFFFF"
+        }
+    }
+}

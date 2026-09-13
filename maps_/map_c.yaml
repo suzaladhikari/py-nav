@@ -1,0 +1,16 @@
+wrap: false
+diagonal_moves: true
+diagonal_move_true_cost: true
+min_distance: 5
+map: |-
+  ----------
+  ----------
+  ---#####--
+  -------#--
+  ----s--#g-
+  -------#--
+  -------#--
+  ---#####--
+  ----------
+  ----------
+validated: false
