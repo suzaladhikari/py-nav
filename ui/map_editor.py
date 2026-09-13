@@ -120,11 +120,6 @@ class MapEditor:
         y += 40
 
         # ── Map selector dropdown ─────────────────────────────────────────
-        pygame_gui.elements.UILabel(
-            relative_rect=pygame.Rect((sx, y), (sw, 24)),
-            text="Map:", manager=self.manager
-        )
-        y += 26
         self.dropdown_map = None
         self._dropdown_y = y
         self.refresh_dropdown()

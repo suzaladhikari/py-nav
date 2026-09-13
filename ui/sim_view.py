@@ -136,9 +136,6 @@ class SimulationView:
             text='Run Agents', manager=self.manager)
         self.btn_run_agents.select()
         y += 40
-        pygame_gui.elements.UILabel(relative_rect=pygame.Rect((sx, y), (sw, 24)),
-                                     text='Map:', manager=self.manager)
-        y += 26
         map_names = [os.path.basename(path).replace('.yaml', '')
                      for path in sorted(glob.glob('maps/*.yaml'))]
         if self.selected_map_name not in map_names:
