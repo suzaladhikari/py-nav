@@ -14,6 +14,9 @@ class DFSAgent(Agent):
         visited = set([start])
 
         while stack:
+            # pop() returns the last element, so neighbors are explored
+            # in reverse order of get_valid_moves() (N last, NW first).
+            # This is expected DFS behaviour — the stack is LIFO.
             current, path = stack.pop()
 
             if current == goal:

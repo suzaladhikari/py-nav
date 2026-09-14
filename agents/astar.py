@@ -26,6 +26,10 @@ class AStarAgent(Agent):
 
         while frontier:
             _, _, current_g_cost, current = heapq.heappop(frontier)
+
+            # Stale-entry check: discard this node if we already found a
+            # better path to it.  Must come *before* the goal test — a
+            # stale goal entry could lead us to return a suboptimal path.
             if current_g_cost != cost_so_far[current]:
                 continue
 

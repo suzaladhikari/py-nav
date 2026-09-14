@@ -7,7 +7,10 @@
             "active_text": "#FFFFFF",
             "normal_bg": "#333333",
             "hovered_bg": "#444444",
-            "selected_bg": "#106c20"
+            "selected_bg": "#106c20",
+            "disabled_text": "#555555",
+            "disabled_bg": "#1e1e1e",
+            "disabled_border": "#1e1e1e"
         }
     },
     "drop_down_menu": {

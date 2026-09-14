@@ -64,13 +64,14 @@ You can add your own agents in the `agents/` folder. Define a class that inherit
 The package discovers agent subclasses automatically at startup, so no central registry edit is required. A minimal shape is:
 
 ```python
+from typing import List, Optional, Tuple
 from core.agent import Agent
 
 
 class MyAgent(Agent):
     name = 'My agent'
 
-    def find_path(self):
+    def find_path(self) -> Optional[List[Tuple[int, int]]]:
         # Starting location is self.start
         # Goal location is self.goal
 
@@ -104,7 +105,6 @@ class MyAgent(Agent):
 | **`ui/`**                    | User interface — pygame_gui screens, components, and theme.                                         |
 | `ui/map_editor.py`           | Edit Map screen: create, draw, resize, save maps.                                                 |
 | `ui/sim_view.py`             | Run Agents screen: select agents, run simulations, animate exploration, view results table.       |
-| `ui/components.py`           | Shared UI components.                                                                             |
 | `ui/help_dialog.py`          | Help overlay dialog drawn on top of any screen.                                                   |
 | `ui/theme.json`              | pygame_gui theme configuration (button colors, dropdown, text entry styles).                      |
 | **`agents/`**                | Pathfinding agent implementations. Each file defines a class inheriting from `core.agent.Agent`. Discovered automatically at startup. |

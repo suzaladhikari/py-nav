@@ -84,6 +84,9 @@ class MapEditor:
         # Dirty flag – tracks unsaved changes
         self.dirty = False
 
+        # Teleport button state – disabled when 26 pairs already placed
+        self.tp_enabled = True
+
         # Pending action while waiting for unsaved-changes dialog
         self._pending_action    = None   # ('select', idx) | ('new',) | ('sim',)
         self.unsaved_panel      = None   # custom 3-button dialog panel
@@ -318,10 +321,10 @@ class MapEditor:
                 len(self.map_obj.map[0]) if self.map_obj.height else DEFAULT_GRID_WIDTH
             )
 
-            max_tp = '@'
+            max_tp = chr(0)
             for row in self.map_obj.map:
                 for cell in row:
-                    if cell.isalpha() and cell.isupper() and cell not in ['s', 'g', 'x']:
+                    if cell.isalpha() and cell.isupper():
                         if cell > max_tp:
                             max_tp = cell
             self.next_tp_id = chr(ord(max_tp) + 1) if max_tp >= 'A' else 'A'
@@ -361,7 +364,7 @@ class MapEditor:
             self.lbl_width.set_text(str(self.map_obj.width))
             self.lbl_height.set_text(str(self.map_obj.height))
             self.update_option_buttons()
-            self.dirty = state.get('dirty', True)
+            self.dirty = state.get('dirty', False)
         tool = state.get('current_tool')
         if tool in self.tool_btns:
             for name, button in self.tool_btns.items():
@@ -456,6 +459,7 @@ class MapEditor:
         self.update_option_buttons()
         self.refresh_dropdown()
         self.dirty = True
+        self._recheck_tp_enable()
 
     # ═══════════════════════════════════════════════════════════════════════
     # Option button labels
@@ -503,7 +507,7 @@ class MapEditor:
         tp_counts = {}
         for row in new_map:
             for cell in row:
-                if cell.isalpha() and cell.isupper() and cell not in ['s', 'g', 'x']:
+                if cell.isalpha() and cell.isupper():
                     tp_counts[cell] = tp_counts.get(cell, 0) + 1
         for cell, cnt in tp_counts.items():
             if cnt != 2:
@@ -515,7 +519,7 @@ class MapEditor:
         # Re-index TPs to be contiguous A, B, C ...
         existing_ids = sorted(set(
             cell for row in new_map for cell in row
-            if cell.isalpha() and cell.isupper() and cell not in ['s', 'g', 'x']
+            if cell.isalpha() and cell.isupper()
         ))
         remap = {old: chr(ord('A') + i) for i, old in enumerate(existing_ids)}
         for row in new_map:
@@ -531,6 +535,51 @@ class MapEditor:
         self.lbl_width.set_text(str(new_w))
         self.lbl_height.set_text(str(new_h))
         self.dirty = True
+        self._recheck_tp_enable()
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # Teleport enable/disable (26-pair limit)
+    # ═══════════════════════════════════════════════════════════════════════
+
+    def _recheck_tp_enable(self):
+        """Enable or disable TP button based on current pair count."""
+        if not hasattr(self, 'tool_btns') or not self.tool_btns:
+            return
+        if self._tp_count() >= 26:
+            self._disable_tp_button()
+        elif not self.tp_enabled:
+            # Count dropped below 26 → re-enable
+            self._enable_tp_button()
+
+    def _enable_tp_button(self):
+        if not self.tp_enabled:
+            self.tp_enabled = True
+            self.tool_btns['Teleport'].enable()
+            self.tool_btns['Teleport'].text = 'Teleport'
+            self.tool_btns['Teleport'].rebuild()
+
+    def _disable_tp_button(self):
+        if self.tp_enabled:
+            self.tp_enabled = False
+            self.tool_btns['Teleport'].disable()
+            self.tool_btns['Teleport'].text = '- Max teleports placed -'
+            self.tool_btns['Teleport'].rebuild()
+            # Auto-switch to Empty if TP is the current tool
+            if self.current_tool == 'Teleport':
+                self.current_tool = 'Empty'
+                for name, button in self.tool_btns.items():
+                    button.select() if name == 'Empty' else button.unselect()
+                self.tp_state = 0
+                self.first_tp_pos = None
+
+    def _tp_count(self):
+        """Count the number of teleport pairs on the map."""
+        counts = {}
+        for row in self.map_obj.map:
+            for cell in row:
+                if cell.isalpha() and cell.isupper():
+                    counts[cell] = counts.get(cell, 0) + 1
+        return sum(1 for cnt in counts.values() if cnt == 2)
 
     # ═══════════════════════════════════════════════════════════════════════
     # Unsaved-changes guard
@@ -769,7 +818,7 @@ class MapEditor:
                     'Use the drawing tools to place empty cells, walls, allowed starts, '
                     'and allowed goals. A cell may be both a start and a goal.',
                     'Use Teleport to place two gates with the same letter. Teleport gates '
-                    'are paired and the move costs one step into the gate.',
+                    'are paired. A move into a teleport gate results in agent automatically being moved to the other coupled gate with the same letter.',
                     'Choose wrapping, diagonal movement, diagonal cost, and minimum distance '
                     'to define the movement rules for the map.',
                     'The minimum distance is checked against at least one allowed start-goal '
@@ -819,13 +868,11 @@ class MapEditor:
                         self.drag_mode = 'erase'
                     elif self.current_tool == 'Empty' and cell == '-':
                         self.drag_mode = 'erase'
-                    elif self.current_tool == 'Start' and cell in ['s', 'x']:
+                    elif self.current_tool == 'Start' and cell in ['@', '$']:
                         self.drag_mode = 'erase'
-                    elif self.current_tool == 'Goal' and cell in ['g', 'x']:
+                    elif self.current_tool == 'Goal' and cell in ['!', '$']:
                         self.drag_mode = 'erase'
-                    elif (self.current_tool == 'Teleport'
-                          and cell.isalpha() and cell.isupper()
-                          and cell not in ['s', 'g', 'x']):
+                    elif (self.current_tool == 'Teleport' and cell.isalpha() and cell.isupper()):
                         self.drag_mode = 'erase'
                     self.apply_tool(gx, gy)
                     self.last_modified_cell = (gx, gy)
@@ -870,7 +917,6 @@ class MapEditor:
             for row in self.map_obj.map
             for cell in row
             if cell.isalpha() and cell.isupper()
-            and cell not in ['s', 'g', 'x']
         })
         self.next_tp_id = (
             chr(ord(existing_ids[-1]) + 1)
@@ -882,13 +928,21 @@ class MapEditor:
             for rx in range(self.map_obj.width):
                 if self.map_obj.map[ry][rx] == tp_id:
                     self.map_obj.map[ry][rx] = '-'
+        # Re-index remaining TPs to be contiguous A, B, C ...
+        # (avoids duplicate IDs when gaps exist, e.g. after deleting C
+        #  when B was already removed but A and D still exist)
+        existing_ids = sorted(set(
+            cell for row in self.map_obj.map
+            for cell in row if cell.isalpha() and cell.isupper()
+        ))
+        remap = {old: chr(ord('A') + i) for i, old in enumerate(existing_ids)}
         for ry in range(self.map_obj.height):
             for rx in range(self.map_obj.width):
                 cell = self.map_obj.map[ry][rx]
-                if (cell.isalpha() and cell.isupper()
-                        and cell > tp_id and cell not in ['s', 'g', 'x']):
-                    self.map_obj.map[ry][rx] = chr(ord(cell) - 1)
+                if cell in remap:
+                    self.map_obj.map[ry][rx] = remap[cell]
         self._refresh_next_tp_id()
+        self._recheck_tp_enable()
 
     # ═══════════════════════════════════════════════════════════════════════
     # Tool application
@@ -896,7 +950,7 @@ class MapEditor:
 
     def apply_tool(self, x, y):
         cell  = self.map_obj.map[y][x]
-        is_tp = cell.isalpha() and cell.isupper() and cell not in ['s', 'g', 'x']
+        is_tp = cell.isalpha() and cell.isupper()
 
         if self.current_tool in ['Start', 'Goal']:
             if cell == '#' or is_tp:
@@ -924,22 +978,22 @@ class MapEditor:
                 self.map_obj.map[y][x] = '#'
         elif self.current_tool == 'Start':
             if self.drag_mode == 'erase':
-                if cell == 'x':   self.map_obj.map[y][x] = 'g'
-                elif cell == 's': self.map_obj.map[y][x] = '-'
+                if cell == '$':   self.map_obj.map[y][x] = '!'
+                elif cell == '@': self.map_obj.map[y][x] = '-'
             else:
-                if cell == 'g':                    self.map_obj.map[y][x] = 'x'
-                elif cell in ['-', 's', 'x']:      self.map_obj.map[y][x] = 's'
+                if cell == '!':                    self.map_obj.map[y][x] = '$'
+                elif cell in ['-', '@', '$']:      self.map_obj.map[y][x] = '@'
         elif self.current_tool == 'Goal':
             if self.drag_mode == 'erase':
-                if cell == 'x':   self.map_obj.map[y][x] = 's'
-                elif cell == 'g': self.map_obj.map[y][x] = '-'
+                if cell == '$':   self.map_obj.map[y][x] = '@'
+                elif cell == '!': self.map_obj.map[y][x] = '-'
             else:
-                if cell == 's':                    self.map_obj.map[y][x] = 'x'
-                elif cell in ['-', 'g', 'x']:      self.map_obj.map[y][x] = 'g'
+                if cell == '@':                    self.map_obj.map[y][x] = '$'
+                elif cell in ['-', '!', '$']:      self.map_obj.map[y][x] = '!'
         elif self.current_tool == 'Teleport':
             if self.drag_mode != 'erase':
                 if self.tp_state == 0:
-                    if self.next_tp_id > 'Z':
+                    if not self.tp_enabled:
                         self._show_warning("Maximum 26 teleport pairs allowed")
                         return
                     self.map_obj.map[y][x] = self.next_tp_id
@@ -951,6 +1005,7 @@ class MapEditor:
                         self.next_tp_id   = chr(ord(self.next_tp_id) + 1)
                         self.tp_state     = 0
                         self.first_tp_pos = None
+                        self._recheck_tp_enable()
 
         self.dirty = True
 
@@ -985,16 +1040,15 @@ class MapEditor:
                 pygame.draw.rect(screen, COLOR_BG_EMPTY, rect)
                 if cell == '#':
                     pygame.draw.rect(screen, COLOR_BG_WALL, rect)
-                elif cell in ['s', 'x']:
+                elif cell in ['@', '$']:
                     pygame.draw.rect(screen, COLOR_START_BG, rect)
 
-                if cell in ['g', 'x']:
+                if cell in ['!', '$']:
                     pygame.draw.circle(
                         screen, COLOR_GOAL_ICON, rect.center, max(3, ts // 4)
                     )
 
-                if (cell.isalpha() and cell.isupper()
-                        and cell not in ['s', 'g', 'x']):
+                if (cell.isalpha() and cell.isupper()):
                     lbl = self.font.render(cell, True, COLOR_TP_TEXT)
                     screen.blit(lbl, (px + max(2, ts // 4), py + max(2, ts // 4)))
 

@@ -404,13 +404,13 @@ class SimulationView:
         cells = []
         for y, row in enumerate(self.map_obj.map):
             for x, value in enumerate(row):
-                if value == marker or value == 'x' or (marker == '-' and value == '-'):
+                if value == marker or value == '$' or (marker == '-' and value == '-'):
                     cells.append((x, y))
         return cells
 
     def _make_pairs(self, count):
-        starts = self._allowed_cells('s') or self._allowed_cells('-')
-        goals = self._allowed_cells('g') or self._allowed_cells('-')
+        starts = self._allowed_cells('@') or self._allowed_cells('-')
+        goals = self._allowed_cells('!') or self._allowed_cells('-')
         candidates = []
         for start in starts:
             for goal in goals:
@@ -698,7 +698,7 @@ class SimulationView:
         ])
 
     def _copy_results(self):
-        headers = ('Agent', 'Runtime(s)', 'Search', 'Solution', 'Optimal')
+        headers = ('Agent', 'Runtime (s)', 'Search', 'Solution', 'Optimal')
         lines = ['{:<16} {:>12} {:>10} {:>10} {:>8}'.format(*headers)]
         for name in self.selected_agents:
             rows = self.results.get(name, [])

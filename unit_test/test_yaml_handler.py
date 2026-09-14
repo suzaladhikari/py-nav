@@ -8,7 +8,7 @@ from utils.yaml_handler import load_map, save_map
 
 class YamlHandlerTests(unittest.TestCase):
     def test_save_and_load_preserves_map_configuration(self):
-        map_obj = Map([list('s-#'), list('-g-')], wrap=True,
+        map_obj = Map([list('@-#'), list('-!-')], wrap=True,
                       diagonal_moves=False, diagonal_move_true_cost=False,
                       min_distance=7)
 
@@ -17,7 +17,7 @@ class YamlHandlerTests(unittest.TestCase):
             save_map(path, map_obj, validated=True)
             loaded = load_map(path)
 
-        self.assertEqual(loaded['map'], [['s', '-', '#'], ['-', 'g', '-']])
+        self.assertEqual(loaded['map'], [['@', '-', '#'], ['-', '!', '-']])
         self.assertTrue(loaded['wrap'])
         self.assertFalse(loaded['diagonal_moves'])
         self.assertFalse(loaded['diagonal_move_true_cost'])

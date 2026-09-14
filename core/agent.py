@@ -1,7 +1,21 @@
 from typing import List, Tuple, Optional
-from core.map import Map
+from core.map import Map, Move
 
 class Agent:
+    """Base class for pathfinding agents.
+
+    Subclass this and implement ``find_path()`` to create a new agent.
+    Place the class in the ``agents/`` directory and it will be
+    discovered automatically at startup.
+
+    Usage inside ``find_path()``:
+        self.start         – tuple (x, y) of the starting cell
+        self.goal          – tuple (x, y) of the goal cell
+        self.get_valid_moves(x, y) – return list of Move objects to
+                                     expand, automatically recording
+                                     the location in the exploration
+                                     history.
+    """
     name = None
 
     def __init__(self, map: Map):
@@ -11,7 +25,12 @@ class Agent:
         self.goal = self.map.get_goal()
         self._exploration_sink = None
 
-    def get_valid_moves(self, x: int, y: int) -> List[Tuple[int, int]]:
+    def get_valid_moves(self, x: int, y: int) -> List[Move]:
+        """Expand the current node and record the explored location.
+
+        Delegates to ``self.map.get_valid_moves(x, y)`` which returns a
+        list of ``Move`` dataclasses (location, action, cost).
+        """
         self.mark_explored(x, y)
         return self.map.get_valid_moves(x, y)
 

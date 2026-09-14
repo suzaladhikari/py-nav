@@ -5,11 +5,40 @@ from core.constants import DIAGONAL_COST
 
 @dataclass
 class Move:
+    """A single possible move from a cell.
+
+    Attributes:
+        location: Destination coordinates (x, y).
+        action: Direction code — 0=N, 1=E, 2=S, 3=W,
+                4=NE, 5=SE, 6=SW, 7=NW.
+        cost: Movement cost - 
+               1.0 for orthogonal,
+               either 1.0 or sqrt(2) for diagonal (depending on map settings).
+    """
     location: Tuple[int, int]
     action: int
     cost: float
 
 class Map:
+    """A 2-D grid map for pathfinding.
+
+    Grid cells are single-character strings:
+        ``'-'``  empty, ``'#'`` wall, ``'@'`` start, ``'!'`` goal,
+        ``'$'`` both start AND goal,
+        ``'A'``-``'Z'`` teleport gates (pairs auto-link).
+
+    Constructor options control movement rules:
+        wrap: allow agents to wrap around map edges.
+        diagonal_moves: allow diagonal steps.
+        diagonal_move_true_cost: use sqrt(2) for diagonal steps (vs 1.0).
+        min_distance: optional constraint checked during validation.
+
+    Attributes:
+        map: 2-D list of cell characters (row-major).
+        width, height: grid dimensions.
+        current_start, current_goal: active start/goal coordinates.
+    """
+
     def __init__(
         self,
         grid: List[List[str]],
