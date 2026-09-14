@@ -17,7 +17,6 @@ import shutil
 import subprocess
 import sys
 import threading
-import time
 import venv
 
 # ---------------------------------------------------------------------------
@@ -25,7 +24,10 @@ import venv
 # ---------------------------------------------------------------------------
 
 REQUIRED_PYTHON = (3, 10)
-VENV_DIR = "venv"
+
+# The venv lives at repo_root/venv, which is one level above main/.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+VENV_DIR = os.path.join(os.path.dirname(SCRIPT_DIR), "venv")
 
 # Hard-coded dependencies — no requirements.txt or pyproject.toml yet.
 DEPS = ("pygame", "pygame_gui", "pyyaml")
@@ -80,6 +82,23 @@ def run_subprocess(cmd, *, check=True):
     return result
 
 
+def _bootstrap_pip(py_exe, venv_path):
+    """Download get-pip.py if the bundled pip is broken."""
+    print("  Bootstrapping pip via get-pip.py...")
+    get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
+    get_pip_dst = os.path.join(venv_path, "get-pip.py")
+
+    try:
+        import urllib.request
+        urllib.request.urlretrieve(get_pip_url, get_pip_dst)
+        run_subprocess([py_exe, get_pip_dst], check=True)
+        print("  pip bootstrapped successfully.")
+        return True
+    except Exception as exc:
+        print(f"  WARNING: pip bootstrap failed: {exc}")
+        return False
+
+
 def verify_deps():
     """Try importing all required packages inside the venv.
 
@@ -102,9 +121,19 @@ def verify_deps():
     )
     result = subprocess.run(
         [py_exe, "-c", code],
+        cwd=SCRIPT_DIR,
         capture_output=True,
         text=True,
     )
+    if result.returncode != 0:
+        # Print the error so the user can see what failed.
+        print("Dependency verification failed:")
+        if result.stderr:
+            for line in result.stderr.strip().splitlines():
+                print(f"  {line}")
+        elif result.stdout:
+            for line in result.stdout.strip().splitlines():
+                print(f"  {line}")
     return result.returncode == 0
 
 
@@ -154,20 +183,49 @@ def main():
     print("Creating virtual environment in", venv_path)
     venv.create(venv_path, with_pip=True)
 
-    # Determine the pip executable inside the venv.
+    # Ensure pip is available — with_pip=True usually works, but spaces
+    # in the path can break bundled pip on Windows. Fall back to ensurepip.
     if platform.system() == "Windows":
-        pip_exe = os.path.join(venv_path, "Scripts", "pip.exe")
+        py_exe = os.path.join(venv_path, "Scripts", "python.exe")
     else:
-        pip_exe = os.path.join(venv_path, "bin", "pip")
+        py_exe = os.path.join(venv_path, "bin", "python")
+
+    result = subprocess.run([py_exe, "-m", "ensurepip", "--default-pip"],
+                            capture_output=True)
+    if result.returncode != 0:
+        print("WARNING: ensurepip also failed; pip may be missing.")
+        print(result.stderr.decode() if result.stderr else "")
 
     print("Installing dependencies...\n")
     stop_spinner = threading.Event()
     spinner_thread = threading.Thread(target=spinner, args=(stop_spinner,), daemon=True)
     spinner_thread.start()
 
+    pip_failed_once = False
     for dep in DEPS:
         print(f"  Installing {dep}...")
-        run_subprocess([pip_exe, "install", "-q", dep])
+        result = run_subprocess(
+            [py_exe, "-m", "pip", "install", "-q", dep],
+            check=False,
+        )
+        if result.returncode != 0:
+            if not pip_failed_once:
+                # First failure — try bootstrapping pip via get-pip.py.
+                _bootstrap_pip(py_exe, venv_path)
+                pip_failed_once = True
+                # Retry the same install
+                result = run_subprocess(
+                    [py_exe, "-m", "pip", "install", "-q", dep],
+                    check=False,
+                )
+            if result.returncode != 0:
+                # Final failure — print the error and abort.
+                print(f"\npip install failed for {dep}:")
+                if result.stderr:
+                    for line in result.stderr.strip().splitlines():
+                        print(f"  {line}")
+                print("\nERROR: setup.py failed.")
+                sys.exit(1)
 
     stop_spinner.set()
     spinner_thread.join()
@@ -182,6 +240,7 @@ def main():
 
     print()
     print("Done!  Run 'python run.py' to launch Py-Nav.")
+    sys.exit(0)
 
 
 if __name__ == "__main__":

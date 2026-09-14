@@ -4,7 +4,7 @@ Py-Nav is a small pygame laboratory for exploring how pathfinding algorithms beh
 
 ## Prerequisites
 
-- **Python 3.10+** — nothing else is required to run the app.
+- **Python 3.10+** — nothing else is required to run the app (though if you have pygame, pygame_gui, and pyyaml packages installed, the setup step will be skipped, and app will launch faster).
 
 ## Quick start
 
@@ -27,34 +27,39 @@ python3 run.py
 If setup fails, run the installer manually:
 
 ```text
-python setup.py --force
+python main/setup.py --force
 ```
 
 Then try `python run.py` again.
 
-## Your assignment
 
-Create maps that make the algorithms behave differently. Start with small maps that let you predict the result before running the experiment. Useful map families include:
+## What to do in this lab
 
-- open grids, with and without diagonal movement
-- long corridors and mazes
-- dead ends that make DFS commit to a poor branch
-- maps where DFS happens to find the goal quickly, even though its path is not optimal
-- maps with diagonal moves whose true cost is either 1 or the Euclidean diagonal cost
-- wrapping maps where the shortest route crosses an edge
-- maps with teleport pairs that create cheap shortcuts
-- disconnected maps and maps with difficult but valid start/goal pairs
-- maps that make the Euclidean A* heuristic misleading, especially with wrapping or teleports
+Create maps that make the algorithms behave differently. 
+Start with small maps that let you predict the result before running the experiment. 
+Then try maps with long corridors, mazes, dead ends.
+Then move on to try to create maps that result in the following:
 
-For each map, write down predictions before running it. Compare runtime, search effort, solution cost, and optimality. Explain surprising results in terms of the movement rules and the algorithm's data structure or heuristic.
+- maps that clearly show how A* is optimal and more efficient than other algorithms
+- maps where Euclidean A* is actually NOT optimal (the path it finds is longer than paths found by some other algorithms)
+- maps where DFS happens to look as if it's optimal, and also the most efficient
 
-Search is the number of locations for which an agent called `get_valid_moves`; it is the app's consistent measure of expanded nodes. Runtime is an approximate total for completed agent runs and includes process startup and communication overhead, so treat small runtime differences cautiously. Repeat an experiment with the same seed when comparing algorithm behavior rather than random start/goal selection.
+For each map, write down predictions before running it. Compare runtime, search effort, solution length, and optimality. Explain surprising results in terms of the movement rules and the algorithm's data structure or heuristic.
 
-Leave the **Random seed** field blank for a new experiment. Enter an integer when you want to reproduce the same generated start/goal pairs. Use the **Copy** button beside the results heading to copy a fixed-width table into a report or spreadsheet.
+In the results table:
+- **Time** is an approximate total for completed agent runs and includes process startup and communication overhead, so treat small runtime differences cautiously. 
+- **Search** is the number of locations for which an agent called `get_valid_moves`; it is the app's consistent measure of expanded nodes (lower is better).
+- **Path** is the length of the solution path found by the algorithm (lower is better). 
+- **Best** is a Yes/No flag indicating whether the best possible path was found (i.e., the optimal solution).
+- Use the **Copy** button beside the results table heading to copy results into a report or spreadsheet.
+
+Repeat an experiment with the same seed when comparing algorithm behavior rather than random start/goal selection.
+Leave the **Random seed** field blank for a new experiment. Enter an integer when you want to reproduce the same generated start/goal pairs. 
+
 
 ## Adding agents
 
-Students can add their own agents in the `agents/` folder. Define a class that inherits from `core.agent.Agent` and implements `find_path`. Call `self.get_valid_moves(x, y)` whenever the agent expands a location; this records its exploration history for the animation. A class-level `name` is optional. If omitted, Py-Nav displays the class name.
+You can add your own agents in the `agents/` folder. Define a class that inherits from `core.agent.Agent` and implements `find_path`. Call `self.get_valid_moves(x, y)` whenever the agent expands a location; this records its exploration history for the animation. A class-level `name` is optional. If omitted, Py-Nav displays the class name.
 
 The package discovers agent subclasses automatically at startup, so no central registry edit is required. A minimal shape is:
 
@@ -88,40 +93,33 @@ class MyAgent(Agent):
         return None
 ```
 
-## Running tests
-
-```text
-python -m unittest discover -s unit_test -v
-```
-
-The existing tests check map movement rules, YAML persistence, validation, agent behavior, and teleport editing. Add tests for any new agent or movement idea you introduce.
-
 ## Project structure
 
 | File / folder                | Description                                                                                       |
 |------------------------------|---------------------------------------------------------------------------------------------------|
-| `run.py`                     | **Primary launcher.** Handles bootstrapping: dependency checking, venv creation, installation, and launch. Run this file to start the app. |
-| `setup.py`                   | Standalone installer. Creates a virtual environment and installs pygame, pygame_gui, pyyaml. Accepts `--force` to recreate, `--verify` to check. |
-| `main.py`                    | Entry point for the application itself. Contains the pygame init, event loop, and view management. Run automatically by `run.py` or `setup.py`. |
-| `theme.json`                 | pygame_gui theme configuration (button colors, dropdown, text entry styles).                      |
+| **`run.py`**                 | **Primary launcher.** Handles bootstrapping: dependency checking, venv creation, installation, and launch. Run this file from the repo root to start the app. |
+| **`main/`**                  | Application entry point directory.                                                                |
+| `main/setup.py`              | Standalone installer. Creates a virtual environment and installs pygame, pygame_gui, pyyaml. Accepts `--force` to recreate, `--verify` to check. |
+| `main/main.py`               | Entry point for the application itself. Contains the pygame init, event loop, and view management. Run automatically by `run.py` or `setup.py`. |
+| **`ui/`**                    | User interface — pygame_gui screens, components, and theme.                                         |
+| `ui/map_editor.py`           | Edit Map screen: create, draw, resize, save maps.                                                 |
+| `ui/sim_view.py`             | Run Agents screen: select agents, run simulations, animate exploration, view results table.       |
+| `ui/components.py`           | Shared UI components.                                                                             |
+| `ui/help_dialog.py`          | Help overlay dialog drawn on top of any screen.                                                   |
+| `ui/theme.json`              | pygame_gui theme configuration (button colors, dropdown, text entry styles).                      |
 | **`agents/`**                | Pathfinding agent implementations. Each file defines a class inheriting from `core.agent.Agent`. Discovered automatically at startup. |
 | `agents/bfs.py`              | Breadth-first search agent (complete, optimal for unweighted grids).                              |
 | `agents/dfs.py`              | Depth-first search agent (not complete, not optimal).                                             |
 | `agents/dijkstra.py`         | Dijkstra's algorithm agent (complete, optimal for weighted grids).                                |
 | `agents/astar.py`            | A* search with Euclidean distance heuristic (admissible on non-wrapping maps).                    |
-| `agents/astar2.py`           | A* search with constant heuristic of 1 — effectively behaves like Dijkstra but labeled "A* (dumb)" for educational comparison. |
 | **`core/`**                  | Core domain logic — agent base class, map model, and constants.                                   |
 | `core/agent.py`              | Abstract `Agent` base class with `get_valid_moves()`, `mark_explored()`, `find_path()`, `run()`.  |
 | `core/map.py`                | `Map` class: grid storage, movement rules (walls, wraparound, teleports, diagonals, weighted tiles). |
 | `core/constants.py`          | Global constants (grid defaults, tile size, color definitions).                                   |
-| **`ui/`**                    | User interface — pygame_gui screens and components.                                                 |
-| `ui/map_editor.py`           | Edit Map screen: create, draw, resize, save maps.                                                 |
-| `ui/sim_view.py`             | Run Agents screen: select agents, run simulations, animate exploration, view results table.       |
-| `ui/components.py`           | Shared UI components.                                                                             |
-| `ui/help_dialog.py`          | Help overlay dialog drawn on top of any screen.                                                   |
 | **`utils/`**                 | Utility modules.                                                                                  |
 | `utils/yaml_handler.py`      | Load and save map YAML files.                                                                     |
-| `utils/session_state.py`     | Save and load `session_state.json` with atomic writes.                                            |
+| `utils/session_state.py`     | Save and load session state JSON with atomic writes.                                              |
 | `utils/validation.py`        | Validation helpers (Dijkstra-based minimum distance checking).                                    |
 | **`maps/`**                  | Folder where saved YAML maps are stored. Created automatically on first map creation.             |
+| **`cache/`**                 | Runtime cache — stores `session_state.json` (auto-created on first launch).                       |
 | **`unit_test/`**             | Unit test suite. Run with `python -m unittest discover -s unit_test -v`.                          |

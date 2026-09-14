@@ -1,15 +1,16 @@
-try:
-    import pygame
-    import pygame_gui
-    from ui.map_editor import MapEditor
-    from ui.sim_view import SimulationView
-    from utils.session_state import load_session_state
-except ImportError:
-    print("Required libraries are not installed.")
-    print("Run 'python setup.py' from this directory, then 'python run.py'.")
-    import sys
+import sys
+import os
 
-    sys.exit(1)
+# Ensure root directory is on sys.path when main.py runs from main/ subfolder.
+_repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
+
+import pygame
+import pygame_gui
+from ui.map_editor import MapEditor
+from ui.sim_view import SimulationView
+from utils.session_state import load_session_state
 
 def main():
     pygame.init()
@@ -17,7 +18,7 @@ def main():
     pygame.display.set_caption("Py-Nav")
     clock = pygame.time.Clock()
 
-    manager = pygame_gui.UIManager((1200, 768), "theme.json")
+    manager = pygame_gui.UIManager((1200, 768), "ui/theme.json")
 
     session_state = load_session_state()
     if session_state.get('active_view') == 'simulation':

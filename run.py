@@ -5,7 +5,7 @@ Strategy
 --------
 1. Verify Python >= 3.10 and that the ``venv`` stdlib module is present.
 2. Check if required packages (pygame, pygame_gui, pyyaml) are importable
-   in the current environment. If so, run ``main.py`` directly.
+   in the current environment. If so, run ``main/main.py`` directly.
 3. If deps are missing in the global env, fall back to venv bootstrap:
    - If venv exists and deps verify → launch via venv Python
    - If venv exists but deps are broken → remove and recreate
@@ -13,6 +13,11 @@ Strategy
 4. Repeat at most ``MAX_RELAUNCH`` times to avoid infinite loops.
 
 On success (main.py exits 0) or a fatal error, the process terminates.
+
+Directory layout
+----------------
+``main/``     – contains setup.py, main.py.
+``venv/``     – sibling of main/, created by setup.py.
 """
 
 import os
@@ -20,7 +25,6 @@ import platform
 import shutil
 import subprocess
 import sys
-import threading
 import venv  # noqa: F401  – used for the availability check
 
 # ---------------------------------------------------------------------------
@@ -32,8 +36,6 @@ VENV_DIR = "venv"
 MAX_RELAUNCH = 3
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-SPINNER_CHARS = ("|", "/", "-", "\\")
-
 # Required third-party packages — kept in sync with setup.py and main.py.
 _REQUIRED_IMPORTS = ("pygame", "pygame_gui", "yaml")
 
@@ -42,26 +44,17 @@ _REQUIRED_IMPORTS = ("pygame", "pygame_gui", "yaml")
 # ---------------------------------------------------------------------------
 
 
-def spinner(stop_event, interval=0.15):
-    """Print a spinning animation to stderr until stop_event is set."""
-    while not stop_event.is_set():
-        for ch in SPINNER_CHARS:
-            if stop_event.is_set():
-                break
-            sys.stderr.write(f"\r{ch} ")
-            sys.stderr.flush()
-            stop_event.wait(interval)
-    sys.stderr.write("\r   \r")
-    sys.stderr.flush()
-
-
 def python_version_ok():
     """Return True when running on Python >= 3.10."""
     return sys.version_info >= REQUIRED_PYTHON
 
 
 def _venv_python():
-    """Return the path to the Python executable inside the venv."""
+    """Return the path to the Python executable inside the venv.
+
+    run.py lives at repo root, so SCRIPT_DIR is the repo root.
+    The venv lives at repo_root/venv, which is where setup.py creates it.
+    """
     if platform.system() == "Windows":
         return os.path.join(SCRIPT_DIR, VENV_DIR, "Scripts", "python.exe")
     else:
@@ -112,7 +105,7 @@ def _direct_launch():
 
     Returns ``True`` on success (exit 0), ``False`` on failure.
     """
-    main_script = os.path.join(SCRIPT_DIR, "main.py")
+    main_script = os.path.join(SCRIPT_DIR, "main", "main.py")
     result = subprocess.run([sys.executable, main_script], cwd=SCRIPT_DIR)
     return result.returncode == 0
 
@@ -126,7 +119,7 @@ def _launch_venv():
     print()
     print(f"Launching Py-Nav via venv Python: {venv_py}")
     print()
-    main_script = os.path.join(SCRIPT_DIR, "main.py")
+    main_script = os.path.join(SCRIPT_DIR, "main", "main.py")
     result = subprocess.run([venv_py, main_script], cwd=SCRIPT_DIR)
     sys.exit(result.returncode)
 
@@ -142,20 +135,12 @@ def _remove_venv():
 def _run_setup():
     """Execute setup.py --force to create venv and install deps.
 
-    Prints a spinner while setup.py runs.
     Returns True if setup succeeded, False otherwise.
     """
-    stop_spinner = threading.Event()
-    spinner_thread = threading.Thread(target=spinner, args=(stop_spinner,), daemon=True)
-    spinner_thread.start()
-
     result = subprocess.run(
-        [sys.executable, os.path.join(SCRIPT_DIR, "setup.py"), "--force"],
+        [sys.executable, os.path.join(SCRIPT_DIR, "main", "setup.py"), "--force"],
         cwd=SCRIPT_DIR,
     )
-
-    stop_spinner.set()
-    spinner_thread.join()
     return result.returncode == 0
 
 
@@ -195,7 +180,7 @@ def main():
             print("Py-Nav exited cleanly.")
             sys.exit(0)
     else:
-        print("Dependencies not found in current Python.")
+        print("Dependencies not found in current Python. Will try virtual environment...")
 
     # Step 2: Try venv bootstrap.
     venv_exists = os.path.isdir(_venv_dir())

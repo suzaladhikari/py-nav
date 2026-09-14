@@ -22,8 +22,6 @@ class BFSAgent(Agent):
                 return path
 
             for move in self.get_valid_moves(current[0], current[1]):
-                # time.sleep(0.01)
-                # if random.random()<0.05: raise Exception()
                 if move.location not in visited:
                     visited.add(move.location)
                     queue.append((move.location, path + [move.location]))

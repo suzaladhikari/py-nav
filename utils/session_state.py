@@ -2,7 +2,9 @@ import json
 import os
 
 
-SESSION_PATH = 'session_state.json'
+# Resolve session state path relative to repo root, not current working dir.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SESSION_PATH = os.path.join(_REPO_ROOT, 'cache', 'session_state.json')
 
 
 def load_session_state():
