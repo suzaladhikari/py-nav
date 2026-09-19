@@ -3,7 +3,7 @@ diagonal_moves: true
 diagonal_move_true_cost: true
 min_distance: 0
 map: |-
-  ---!------
+  ----@-----
   ----------
   ----------
   ----------
@@ -12,5 +12,5 @@ map: |-
   ----------
   ----------
   ----------
-  ---------@
+  -------!--
 validated: false
